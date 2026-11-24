@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from features import FEATURES, MODEL
+from src.features import FEATURES, MODEL
 
 
 class Measurements(BaseModel):
