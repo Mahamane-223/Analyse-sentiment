@@ -12,7 +12,6 @@ from features import FEATURES, MODEL
 
 class Measurements(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
-
     bill_length_mm: float = Field(gt=0)
     bill_depth_mm: float = Field(gt=0)
     flipper_length_mm: float = Field(gt=0)
