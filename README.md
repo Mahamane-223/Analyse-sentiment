@@ -96,7 +96,7 @@ curl -X POST http://localhost:8000/predict \
  
 | Avis positif | Avis négatif | Avis vide (422) |
 |---|---|---|
-| ![positif](/home/sarah/Downloads/positif.png) | ![négatif](/home/sarah/Downloads/negatif.png) | ![vide](/home/sarah/Downloads/neutre.png) |
+| ![positif](captures/positif.png) | ![négatif](captures/negatif.png) | ![vide](captures/neutre.png) |
  
 ## Tests et intégration continue
  
