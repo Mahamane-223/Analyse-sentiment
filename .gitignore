@@ -1,0 +1,4 @@
+.venv/
+data/allocine/*.parquet
+data/allocine/*.csv
+__pycache__/
