@@ -1,59 +1,71 @@
 # Analyse de sentiments : avis de films IMDb
- 
+
 Ce projet classe un avis de film (en anglais) comme **positif** ou **négatif**.
 Le modèle est un TF-IDF suivi d'une régression logistique (scikit-learn). Il est exposé par une API **FastAPI** et utilisé depuis une interface **Streamlit**.
- 
+
 Projet réalisé pendant le mini-hackathon Data & IA de HETIC (novembre 2026).
- 
+
 ## Architecture
- 
+
 ```
 Streamlit (port 8501)  ──POST /predict──▶  FastAPI (port 8000)  ──▶  model/sentiment.joblib
 ```
- 
+
 ## Structure du dépôt
- 
+
 ```
 .
 ├── api/                 # API FastAPI (main.py + Dockerfile)
 ├── app/                 # Interface Streamlit (streamlit_app.py + Dockerfile)
-├── src/                 # Préparation des données et entraînement
-├── data/imdb/           # Jeu de données IMDb
-├── model/               # Modèle entraîné (sentiment.joblib)
-├── notebooks/           # Exploration des données
+├── src/                 # Chargement des données et entraînement
+├── data/imdb/           # Jeu de données IMDb (brut, nettoyé, train/test)
+├── model/               # Modèle entraîné (sentiment.joblib) et métriques (metrics.json)
+├── notebooks/           # Exploration (IMDb + Allociné), préparation, évaluation
 ├── tests/               # Tests pytest
+├── captures/            # Captures d'écran de l'interface
 ├── requirements.txt     # Toutes les dépendances du projet
 ├── pytest.ini           # Configuration de pytest
 ├── docker-compose.yml
 └── .github/workflows/   # CI GitHub Actions
 ```
- 
+
 ## Données
- 
+
 Jeu utilisé : [Sentiment Labelled Sentences (UCI)](https://archive.ics.uci.edu/dataset/331/sentiment+labelled+sentences), fichier `imdb_labelled.txt` : 1 000 phrases issues d'avis IMDb, étiquetées 1 (positif) ou 0 (négatif).
- 
+
 - **Licence** : Creative Commons Attribution 4.0 (CC BY 4.0). Source à citer : Kotzias et al., *From Group to Individual Labels using Deep Features*, KDD 2015.
-- **Nettoyage** : aucun avis vide, 3 doublons supprimés (« 10/10 », « Not recommended. »…), soit **997 avis**.
+- **Nettoyage** : aucun avis vide, 3 doublons supprimés (« 10/10 », « Not recommended. »…), soit **997 avis**. Les accents et les négations sont conservés.
 - **Répartition** : 499 négatifs / 498 positifs (équilibré).
 - **Découpage** : 80 % entraînement (797 avis) / 20 % test (200 avis), stratifié, `random_state=42`.
- 
+
+**Choix du jeu de données** : le corpus Allociné (français, 200 000 avis) a aussi été exploré (`notebooks/00_exploration_allocine.ipynb`). IMDb a été retenu pour sa légèreté et sa rapidité d'itération.
+
+| Notebook | Contenu |
+|---|---|
+| `00_exploration_imdb.ipynb` | Exploration, nettoyage et graphiques d'IMDb |
+| `00_exploration_allocine.ipynb` | Exploration d'Allociné et comparaison des deux jeux |
+| `01_preparation.ipynb` | Découpage train/test et export des CSV |
+| `02_evaluation.ipynb` | F1 macro, matrice de confusion, analyse d'erreurs |
+
 ## Prérequis
- 
+
 - Git
 - Docker et Docker Compose
 - Python 3.12 (uniquement pour lancer le projet sans Docker)
+
 ## Lancer le projet avec Docker (recommandé)
- 
+
 ```bash
 git clone https://github.com/Mahamane-223/Analyse-sentiment.git
 cd Analyse-sentiment
 docker compose up --build
 ```
- 
+
 - Interface : http://localhost:8501
 - API et documentation Swagger : http://localhost:8000/docs
+
 Pour arrêter : `Ctrl+C`, puis `docker compose down`.
- 
+
 ## Lancer le projet sans Docker
 
 ### 1. Installer les dépendances
@@ -90,9 +102,9 @@ streamlit run app/streamlit_app.py
 - Interface : http://localhost:8501
 
 L'interface appelle l'API sur `http://localhost:8000` par défaut. Une autre adresse peut être donnée avec la variable d'environnement `API_URL`.
- 
+
 ## Utiliser l'API
- 
+
 | Route | Entrée | Sortie |
 |---|---|---|
 | `GET /health` | — | `{"status": "ok"}` |
@@ -101,29 +113,29 @@ L'interface appelle l'API sur `http://localhost:8000` par défaut. Une autre adr
 `label` vaut `"positif"` ou `"négatif"`, et `proba` est la probabilité de ce label (entre 0 et 1).
 
 Une entrée invalide renvoie une erreur **HTTP 422** : texte vide ou composé d'espaces, champ `text` manquant, champ inconnu, texte qui n'est pas une chaîne, ou texte de plus de 5 000 caractères.
- 
+
 Exemple d'avis valide :
- 
+
 ```bash
 curl -X POST http://localhost:8000/predict \
      -H "Content-Type: application/json" \
      -d '{"text": "I loved the ending."}'
 ```
- 
+
 Exemple d'avis invalide, qui renvoie 422 :
- 
+
 ```bash
 curl -X POST http://localhost:8000/predict \
      -H "Content-Type: application/json" \
      -d '{"text": "   "}'
 ```
- 
+
 ## Captures d'écran
- 
+
 | Avis positif | Avis négatif | Avis vide (422) |
 |---|---|---|
 | ![positif](captures/positif.png) | ![négatif](captures/negatif.png) | ![vide](captures/neutre.png) |
- 
+
 ## Tests et intégration continue
 
 Depuis la racine du projet, après avoir installé les dépendances :
@@ -133,11 +145,11 @@ pytest -v
 ```
 
 Les tests (`tests/test_api.py`) utilisent le vrai modèle et le `TestClient` de FastAPI : il n'est pas nécessaire de lancer l'API avant. Ils couvrent les prédictions positives et négatives, le format de la réponse, la validation des entrées (422) et la gestion d'un modèle absent ou en erreur.
- 
-À chaque push, GitHub Actions (`.github/workflows/ci.yml`) lance `pytest` et vérifie que les images Docker se construisent.
- 
+
+À chaque push, GitHub Actions (`.github/workflows/ci.yml`) lance `pytest` et vérifie que les images Docker se construisent. Le dépôt étant hébergé sur GitHub, GitHub Actions remplace GitLab CI.
+
 ## Résultats et limites
- 
+
 ### Résultats
 
 Entraînement : `python src/train.py` (les scores sont aussi enregistrés dans `model/metrics.json`).
@@ -158,7 +170,7 @@ Matrice de confusion (jeu de test, 200 avis) :
 | **Vrai négatif** | 75 | 25 |
 | **Vrai positif** | 15 | 85 |
 
-Le modèle se trompe plus souvent sur les avis négatifs : quand il hésite, il a tendance à répondre « positif ».
+Le modèle se trompe plus souvent sur les avis négatifs : quand il hésite, il a tendance à répondre « positif ». Ses erreurs sont presque toutes proches du seuil (probabilité entre 0,40 et 0,63) : il se trompe surtout quand il hésite.
 
 ### Limites
 
@@ -168,17 +180,21 @@ Exemples réels d'erreurs sur le jeu de test :
 |---|---|---|---|
 | Négation | « It is not good. » | négatif | positif |
 | Négation | « Predictable, but not a bad watch. » | positif | négatif |
-| Ironie | « All in all, a great disappointment. » | négatif | positif |
+| Mot positif dans un contexte négatif | « All in all, a great disappointment. » | négatif | positif |
+| Ironie | « Your brain will attempt to shut-down as part of a primal impulse of self-preservation. » | négatif | positif |
 | Avis très court | « Hated it. » | négatif | positif |
 | Vocabulaire inconnu | « In fact, this stinker smells like a direct-to-video release. » | négatif | positif |
 
 - **Négations** : le modèle regarde les mots un par un. Dans « not good », il voit « good » et pense que c'est positif.
-- **Ironie** : un mot positif utilisé de façon ironique (« great disappointment ») trompe le modèle.
+- **Mots positifs dans un contexte négatif** : dans « great disappointment », le mot « great » pèse vers le positif alors que la phrase est négative.
+- **Ironie** : quand l'avis ne contient aucun mot explicitement négatif, le modèle ne peut pas détecter le sarcasme.
 - **Avis très courts** : avec 1 ou 2 mots, le modèle a très peu d'indices, surtout si le mot n'apparaît pas dans les données d'entraînement.
 - **Peu de données** : 797 avis d'entraînement seulement, donc beaucoup de mots n'ont jamais été vus.
+- **Petit jeu de test** : avec 200 avis, le score varie de quelques points selon le découpage (0,767 en validation croisée contre 0,799 sur le test).
 - **Domaine limité** : le modèle a appris sur des avis de films en anglais. Il n'est pas fiable sur d'autres sujets ou dans d'autres langues.
+
 ## Équipe
- 
+
 | Rôle | Responsabilités |
 |---|---|
 | Data et cheffe de projet | données, évaluation, gestion du repo |
