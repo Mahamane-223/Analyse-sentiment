@@ -1,5 +1,4 @@
 .venv/
-data/allocine/*.parquet
-data/allocine/*.csv
+data/allocine/
 __pycache__/
 .pytest_cache/
