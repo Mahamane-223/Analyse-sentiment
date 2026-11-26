@@ -1,7 +1,23 @@
-matplotlib==3.10.7
+# Dépendances de tout le projet : pip install -r requirements.txt
+
+# Machine learning (src/train.py, chargement du modèle par l'API)
+# scikit-learn doit rester à la version qui a sérialisé model/sentiment.joblib
+scikit-learn==1.9.1
+joblib
 pandas==2.3.3
+
+# API (api/main.py)
 fastapi
 uvicorn[standard]
-joblib
-scikit-learn==1.9.1
+
+# Interface (app/streamlit_app.py)
+streamlit
+requests
+
+# Notebooks (graphiques, lecture des fichiers parquet Allociné)
+matplotlib==3.10.7
 pyarrow
+
+# Tests (tests/test_api.py)
+pytest==9.2.0
+httpx==0.29.0

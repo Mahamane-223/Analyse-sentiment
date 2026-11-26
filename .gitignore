@@ -2,3 +2,4 @@
 data/allocine/*.parquet
 data/allocine/*.csv
 __pycache__/
+.pytest_cache/

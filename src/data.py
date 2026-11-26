@@ -3,7 +3,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-
+ 
 def load_imdb(path=DATA_DIR / "imdb" / "imdb_labelled.txt"):
     rows = []
     with open(path, encoding="utf-8") as f:
