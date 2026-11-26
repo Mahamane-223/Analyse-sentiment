@@ -22,6 +22,8 @@ Streamlit (port 8501)  ──POST /predict──▶  FastAPI (port 8000)  ──
 ├── model/               # Modèle entraîné (sentiment.joblib)
 ├── notebooks/           # Exploration des données
 ├── tests/               # Tests pytest
+├── requirements.txt     # Toutes les dépendances du projet
+├── pytest.ini           # Configuration de pytest
 ├── docker-compose.yml
 └── .github/workflows/   # CI GitHub Actions
 ```
@@ -53,31 +55,52 @@ docker compose up --build
 Pour arrêter : `Ctrl+C`, puis `docker compose down`.
  
 ## Lancer le projet sans Docker
- 
+
+### 1. Installer les dépendances
+
+Toutes les dépendances du projet (modèle, API, interface, notebooks, tests) sont dans `requirements.txt`, à la racine :
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows : .venv\Scripts\activate
-pip install -r requirements.txt -r app/requirements.txt
+pip install -r requirements.txt
 ```
- 
-Ensuite, ouvrez deux terminaux à la racine du projet :
- 
+
+> `app/requirements.txt` sert uniquement à construire l'image Docker de l'interface. Il n'est pas nécessaire pour une installation locale.
+
+### 2. Lancer l'API
+
+Depuis la racine du projet (le modèle `model/sentiment.joblib` est chargé au démarrage) :
+
 ```bash
-# Terminal 1 : l'API
 uvicorn api.main:app --reload
- 
-# Terminal 2 : l'interface
+```
+
+- API : http://localhost:8000
+- Documentation Swagger : http://localhost:8000/docs
+
+### 3. Lancer l'interface Streamlit
+
+Dans un second terminal, toujours depuis la racine du projet, avec l'API déjà lancée :
+
+```bash
 streamlit run app/streamlit_app.py
 ```
+
+- Interface : http://localhost:8501
+
+L'interface appelle l'API sur `http://localhost:8000` par défaut. Une autre adresse peut être donnée avec la variable d'environnement `API_URL`.
  
 ## Utiliser l'API
  
 | Route | Entrée | Sortie |
 |---|---|---|
 | `GET /health` | — | `{"status": "ok"}` |
-| `POST /predict` | `{"text": "I loved this movie"}` | `{"label": "positif", "proba": 0.91}` |
- 
-Un texte vide ou composé d'espaces renvoie une erreur **HTTP 422**.
+| `POST /predict` | `{"text": "I loved this movie"}` | `{"label": "positif", "proba": 0.61}` |
+
+`label` vaut `"positif"` ou `"négatif"`, et `proba` est la probabilité de ce label (entre 0 et 1).
+
+Une entrée invalide renvoie une erreur **HTTP 422** : texte vide ou composé d'espaces, champ `text` manquant, champ inconnu, texte qui n'est pas une chaîne, ou texte de plus de 5 000 caractères.
  
 Exemple d'avis valide :
  
@@ -102,10 +125,14 @@ curl -X POST http://localhost:8000/predict \
 | ![positif](captures/positif.png) | ![négatif](captures/negatif.png) | ![vide](captures/neutre.png) |
  
 ## Tests et intégration continue
- 
+
+Depuis la racine du projet, après avoir installé les dépendances :
+
 ```bash
 pytest -v
 ```
+
+Les tests (`tests/test_api.py`) utilisent le vrai modèle et le `TestClient` de FastAPI : il n'est pas nécessaire de lancer l'API avant. Ils couvrent les prédictions positives et négatives, le format de la réponse, la validation des entrées (422) et la gestion d'un modèle absent ou en erreur.
  
 À chaque push, GitHub Actions (`.github/workflows/ci.yml`) lance `pytest` et vérifie que les images Docker se construisent.
  
