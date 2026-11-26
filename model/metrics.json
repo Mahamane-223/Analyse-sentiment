@@ -1,0 +1,10 @@
+{
+  "dataset": "IMDb (UCI Sentiment Labelled Sentences)",
+  "baseline_f1_macro": 0.333,
+  "cv_f1_macro": {
+    "(1, 1)": 0.767,
+    "(1, 2)": 0.759
+  },
+  "best_ngram_range": "(1, 1)",
+  "test_f1_macro": 0.799
+}
